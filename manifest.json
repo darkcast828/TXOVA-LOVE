@@ -1,0 +1,20 @@
+{
+  "short_name": "TxovaLove",
+  "name": "Txova Love - Encontros Moçambique",
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1531123414780-f74242c2b052?w=192&h=192&fit=crop",
+      "type": "image/jpeg",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1531123414780-f74242c2b052?w=512&h=512&fit=crop",
+      "type": "image/jpeg",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#FF4D6D",
+  "background_color": "#ffffff"
+}
