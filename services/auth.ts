@@ -69,45 +69,39 @@ export interface RegisterData {
 
 export const authService = {
   login: async (phone: string, password?: string): Promise<AuthUser> => {
-    // 1. Simulate Network Latency (Anti-timing attack in real scenarios)
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // 2. Input Sanitization
-    const sanitizedPhone = phone.replace(/[^0-9]/g, '');
-    
     if (!password) {
       throw new Error("Por favor, insira a sua palavra-passe.");
     }
 
-    // 3. Database Lookup (Backend Logic)
-    const db = getDatabase();
-    const foundUser = db.find(u => u.phone === sanitizedPhone);
+    const sanitizedPhone = phone.replace(/[^0-9]/g, '');
 
-    // 4. SECURITY CHECK
-    // Logic: If user not found OR password doesn't match hash -> FAIL
-    // We use a generic error message to prevent User Enumeration
-    
-    let passwordIsValid = false;
-    if (foundUser) {
-      passwordIsValid = simulateBcryptCompare(password, foundUser.passwordHash);
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ phone: sanitizedPhone, password })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao fazer login');
+      }
+
+      const data = await response.json();
+      
+      // Store token
+      localStorage.setItem('txova_token', data.token);
+      localStorage.setItem('txova_user', JSON.stringify(data.user));
+
+      return {
+        ...data.user,
+        token: data.token
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Erro de conexão');
     }
-
-    if (!foundUser || !passwordIsValid) {
-      // Return GENERIC error. Do not say "User not found" or "Wrong password".
-      throw new Error("Número de telemóvel ou palavra-passe incorretos.");
-    }
-
-    // 5. Generate Session (Success)
-    // In a real app, verify 2FA here if enabled.
-    return {
-      id: foundUser.id,
-      name: foundUser.name,
-      phone: foundUser.phone,
-      token: `jwt-mock-${Date.now()}-${Math.random()}`, // Mock JWT
-      province: foundUser.province,
-      age: foundUser.age,
-      photoUrl: foundUser.photoUrl
-    };
   },
 
   register: async (data: RegisterData): Promise<AuthUser> => {
@@ -118,12 +112,6 @@ export const authService = {
 
     const sanitizedPhone = data.phone.replace(/[^0-9]/g, '');
 
-    // 1. DUPLICATE CHECK
-    const db = getDatabase();
-    if (db.some(u => u.phone === sanitizedPhone)) {
-      throw new Error("Este número já está registado. Tente fazer login.");
-    }
-
     // 2. SAFETY CHECK (TEXT)
     if (!safetyService.analyzeText(data.name)) {
       throw new Error(SAFETY_ERROR_MSG);
@@ -132,9 +120,6 @@ export const authService = {
     if (data.bio && !safetyService.analyzeText(data.bio)) {
       throw new Error(SAFETY_ERROR_MSG);
     }
-
-    // Simulate API upload delay (Uploading + AI Analysis)
-    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // 3. SAFETY CHECK (IMAGE)
     const isImageSafe = await safetyService.analyzeImage(data.photo);
@@ -148,44 +133,59 @@ export const authService = {
       throw new Error("Dados incompletos.");
     }
 
-    // 5. HASH PASSWORD (CRITICAL STEP)
-    // Never store plain password
-    const passwordHash = simulateBcryptHash(data.password);
+    // Convert photo to base64 or URL (Mock upload)
+    // In a real app, upload to S3/Cloudinary first
+    const photoUrl = URL.createObjectURL(data.photo);
 
-    // 6. Create User Record
-    const newUser: StoredUser = {
-      id: `u-${Date.now()}`,
-      name: data.name,
-      phone: sanitizedPhone,
-      passwordHash: passwordHash, // Store Hash
-      province: data.province,
-      age: data.age,
-      photoUrl: URL.createObjectURL(data.photo), // Mock URL for local preview
-      createdAt: Date.now()
-    };
+    try {
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: data.name,
+          phone: sanitizedPhone,
+          password: data.password,
+          age: data.age,
+          province: data.province,
+          bio: data.bio,
+          photoUrl: photoUrl // Sending blob URL as placeholder
+        })
+      });
 
-    // 7. Save to DB
-    saveToDatabase(newUser);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao registar');
+      }
 
-    return {
-      id: newUser.id,
-      name: newUser.name,
-      phone: newUser.phone,
-      token: `jwt-mock-${Date.now()}`,
-      province: newUser.province,
-      age: newUser.age,
-      photoUrl: newUser.photoUrl
-    };
+      const data = await response.json();
+
+      // Store token
+      localStorage.setItem('txova_token', data.token);
+      localStorage.setItem('txova_user', JSON.stringify(data.user));
+
+      return {
+        ...data.user,
+        token: data.token
+      };
+    } catch (error: any) {
+      throw new Error(error.message || 'Erro de conexão');
+    }
   },
 
   isAuthenticated: (): boolean => {
-    // Check if token exists and is valid (mock)
     return !!localStorage.getItem('txova_token');
   },
 
   logout: () => {
     localStorage.removeItem('txova_token');
-    // Force reload to ensure App state is reset and prevent router loops
+    localStorage.removeItem('txova_user');
     window.location.reload();
+  },
+
+  getCurrentUser: (): AuthUser | null => {
+    const userStr = localStorage.getItem('txova_user');
+    return userStr ? JSON.parse(userStr) : null;
   }
 };

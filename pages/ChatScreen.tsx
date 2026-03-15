@@ -6,6 +6,7 @@ import { walletService } from '../services/wallet';
 import { Message, VirtualGift } from '../types';
 import { MOCK_PROFILES, REPORT_REASONS, VIRTUAL_GIFTS } from '../constants';
 import { Modal } from '../components/ui';
+import { GiftAnimation } from '../components/GiftAnimation';
 
 export const ChatScreen: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -18,9 +19,13 @@ export const ChatScreen: React.FC = () => {
   // Gift State
   const [isGiftModalOpen, setGiftModalOpen] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
+  const [currentGift, setCurrentGift] = useState<VirtualGift | null>(null);
+  const [giftSender, setGiftSender] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const lastProcessedMessageIdRef = useRef<string | null>(null);
+  const isInitialLoad = useRef(true);
   
   const user = MOCK_PROFILES.find(p => p.id === userId);
 
@@ -29,6 +34,31 @@ export const ChatScreen: React.FC = () => {
       const msgs = chatService.getMessages(userId);
       setMessages([...msgs]); 
       chatService.markAsRead(userId);
+
+      // Check for new incoming gifts
+      if (msgs.length > 0) {
+        const lastMsg = msgs[msgs.length - 1];
+        
+        // Skip animation on initial load
+        if (isInitialLoad.current) {
+            lastProcessedMessageIdRef.current = lastMsg.id;
+            isInitialLoad.current = false;
+            return;
+        }
+        
+        // Only process if it's a new message
+        if (lastMsg.id !== lastProcessedMessageIdRef.current) {
+            lastProcessedMessageIdRef.current = lastMsg.id;
+            
+            // If it's a gift from the OTHER user (not me)
+            if (lastMsg.type === 'gift' && lastMsg.giftData && lastMsg.senderId !== 'me') {
+                setGiftSender(user?.name || 'Alguém');
+                setCurrentGift(lastMsg.giftData);
+            }
+        }
+      } else {
+          isInitialLoad.current = false;
+      }
     }
   };
 
@@ -77,6 +107,11 @@ export const ChatScreen: React.FC = () => {
           chatService.sendMessage(userId!, `Enviou ${gift.name}`, 'gift', gift);
           setWalletBalance(walletService.getBalance()); // Update local balance
           setGiftModalOpen(false);
+          
+          // Trigger Animation for Sender
+          setGiftSender('Tu');
+          setCurrentGift(gift);
+          
           loadMessages();
       }
   };
@@ -112,6 +147,11 @@ export const ChatScreen: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen bg-[#e5ddd5]">
+      <GiftAnimation 
+        gift={currentGift} 
+        senderName={giftSender} 
+        onComplete={() => setCurrentGift(null)} 
+      />
       {/* Header */}
       <header className="bg-brand-pink text-white px-4 py-3 flex items-center gap-3 shadow-md z-10 relative">
         <button onClick={() => navigate(-1)} className="p-1 hover:bg-white/10 rounded-full">

@@ -47,6 +47,31 @@ export const Profile: React.FC = () => {
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+      const fetchProfile = async () => {
+        const token = localStorage.getItem('txova_token');
+        if (!token) return;
+
+        try {
+          const res = await fetch('/api/profile', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            // Merge API data with local state (preserving stats/mock data if missing from API)
+            setUser(prev => ({ 
+                ...prev, 
+                name: data.name || prev.name,
+                age: data.age || prev.age,
+                phone: data.phone || prev.phone,
+                province: data.province || data.city || prev.province,
+                // Add other fields as needed
+            }));
+          }
+        } catch (err) {
+          console.error("Failed to fetch profile", err);
+        }
+      };
+      fetchProfile();
       setWalletBalance(walletService.getBalance());
   }, []);
 

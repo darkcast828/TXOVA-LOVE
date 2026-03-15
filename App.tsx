@@ -10,6 +10,7 @@ import { Messages } from './pages/Messages';
 import { ChatScreen } from './pages/ChatScreen';
 import { AdsPage } from './pages/AdsPage';
 import { WalletPage } from './pages/WalletPage';
+import { AdminPanel } from './pages/AdminPanel';
 import { authService } from './services/auth';
 
 // Protected Route Component
@@ -81,6 +82,12 @@ const App: React.FC = () => {
           <Route path="/profile" element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin" element={
+            <ProtectedRoute>
+              <AdminPanel />
             </ProtectedRoute>
           } />
 

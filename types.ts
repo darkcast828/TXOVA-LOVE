@@ -85,9 +85,32 @@ export interface ReportReason {
 export interface CoinPackage {
   id: string;
   coins: number;
-  bonus: number;
   price: number; // MZN
   label?: string;
+  isPopular?: boolean;
+}
+
+export interface AdminUser {
+  id: string;
+  username: string;
+  role: 'admin' | 'moderator';
+}
+
+export interface AdCampaign {
+  id: string;
+  userId: string;
+  type: 'boost_profile' | 'product_ad';
+  durationDays: number;
+  cost: number;
+  status: 'active' | 'expired';
+  createdAt: number;
+  expiresAt: number;
+  content?: {
+    title: string;
+    description: string;
+    imageUrl?: string;
+    link?: string;
+  };
 }
 
 export interface VirtualGift {

@@ -17,10 +17,10 @@ export const PROVINCES = [
 // --- TXCOINS ECONOMY ---
 
 export const COIN_PACKAGES: CoinPackage[] = [
-  { id: 'starter', coins: 100, bonus: 0, price: 199, label: 'Iniciante' },
-  { id: 'popular', coins: 500, bonus: 50, price: 899, label: 'Mais Popular (+10%)' },
-  { id: 'pro', coins: 1000, bonus: 200, price: 1699, label: 'Pro (+20%)' },
-  { id: 'whale', coins: 2000, bonus: 600, price: 2999, label: 'Patrão (+30%)' }
+  { id: 'starter', coins: 100, price: 199, label: 'Iniciante' },
+  { id: 'popular', coins: 500, price: 899, label: 'Popular', isPopular: true },
+  { id: 'pro', coins: 1000, price: 1699, label: 'Pro' },
+  { id: 'whale', coins: 2000, price: 2999, label: 'Patrão' }
 ];
 
 export const VIRTUAL_GIFTS: VirtualGift[] = [
